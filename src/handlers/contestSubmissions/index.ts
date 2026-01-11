@@ -1,5 +1,6 @@
 import type { Client, SendableChannels, TextBasedChannel } from "discord.js";
 import type { ContestDocument } from "../../database/models/Contest.model";
+import config from "../../config";
 import Emojis from "../../constants/emojis";
 import { Contest } from "../../database/models/Contest.model";
 import { ContestSubmission, ContestSubmissionStatus } from "../../database/models/ContestSubmission.model";
@@ -88,11 +89,12 @@ function onVoteStart(contest: ContestDocument, client: Client): void {
 function onVoteEnd(contest: ContestDocument, client: Client): void {
   const channel = client.channels.resolve(contest.submissionChannelId) as null | (SendableChannels & TextBasedChannel);
   if (!channel) return void mainLogger.warn(`Could not find channel ${contest.submissionChannelId} when trying to update voting results`);
-  const adminChannel = contest.adminChannelId
-    ? client.channels.resolve(contest.adminChannelId) as null | (SendableChannels & TextBasedChannel)
+  const resolvedAdminChannelId = contest.adminChannelId ?? config.adminChannelId;
+  const adminChannel = resolvedAdminChannelId
+    ? client.channels.resolve(resolvedAdminChannelId) as null | (SendableChannels & TextBasedChannel)
     : null;
-  if (contest.adminChannelId && !adminChannel) {
-    mainLogger.warn(`Could not find channel ${contest.adminChannelId} when trying to post contest results`);
+  if (resolvedAdminChannelId && !adminChannel) {
+    mainLogger.warn(`Could not find channel ${resolvedAdminChannelId} when trying to post contest results`);
   }
 
   return void ContestSubmission.find({ contestId: contest.contestId }).then(async submissions => {

@@ -33,4 +33,5 @@ export default {
   guildId: String(process.env["GUILD_ID"]),
 
   adminRoles: (process.env["ADMIN_ROLES"] ?? "").split(","),
+  adminChannelId: String(process.env["ADMIN_CHANNEL_ID"] ?? "1460043947425403181"),
 } as const;

@@ -3,6 +3,7 @@ import type { SecondLevelChatInputCommand } from "..";
 import contestAutocomplete from "../../../constants/autocompletes/contest";
 import { parseContestDate } from "../../../constants/autocompletes/date";
 import Emojis from "../../../constants/emojis";
+import config from "../../../config";
 import { Contest } from "../../../database/models/Contest.model";
 import { setupJobs } from "../../../handlers/contestSubmissions";
 import setupContestInteractions from "../../../handlers/contestSubmissions/setupContestInteractions";
@@ -33,7 +34,7 @@ export default {
     }
 
     const name = interaction.options.getString("name") ?? contest.name;
-    const submissionType = (interaction.options.getString("submission_type") as "image" | "text" | null) ?? contest.submissionType;
+    const submissionType = contest.submissionType;
     const submissionOpenedDateInput = interaction.options.getString("submission_open_date");
     const submissionClosedDateInput = interaction.options.getString("submission_close_date");
     const votingOpenedDateInput = interaction.options.getString("voting_open_date");
@@ -43,7 +44,7 @@ export default {
     const votingOpenedDate = votingOpenedDateInput ? parseContestDate(votingOpenedDateInput) : contest.votingOpenedDate;
     const votingClosedDate = votingClosedDateInput ? parseContestDate(votingClosedDateInput) : contest.votingClosedDate;
     const reviewChannelId = interaction.options.getChannel("review_channel")?.id ?? contest.reviewChannelId;
-    const adminChannelId = interaction.options.getChannel("admin_channel")?.id ?? contest.adminChannelId;
+    const adminChannelId = config.adminChannelId || contest.adminChannelId;
     const submissionChannelId = interaction.options.getChannel("submission_channel")?.id ?? contest.submissionChannelId;
     const maxSubmissionsPerUser = interaction.options.getInteger("max_submissions_per_user") ?? contest.maxSubmissionsPerUser;
     const maxVotesPerUser = interaction.options.getInteger("max_votes_per_user") ?? contest.maxVotesPerUser;

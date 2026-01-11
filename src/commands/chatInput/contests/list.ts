@@ -1,6 +1,7 @@
 import type { APIEmbed } from "discord.js";
 import type { SecondLevelChatInputCommand } from "..";
 import type { ContestDocument } from "../../../database/models/Contest.model";
+import config from "../../../config";
 import Emojis from "../../../constants/emojis";
 import { Contest } from "../../../database/models/Contest.model";
 
@@ -28,12 +29,13 @@ export function contestToEmbed(contest: ContestDocument): APIEmbed {
   const submissionClose = Math.round(contest.submissionClosedDate.getTime() / 1000);
   const votingOpen = Math.round(contest.votingOpenedDate.getTime() / 1000);
   const votingClose = Math.round(contest.votingClosedDate.getTime() / 1000);
+  const adminChannelId = contest.adminChannelId ?? config.adminChannelId;
 
   return {
     title: contest.name,
     fields: [
       { name: "Review channel", value: contest.reviewChannelId ? `<#${contest.reviewChannelId}>` : "Not set", inline: true },
-      { name: "Admin channel", value: contest.adminChannelId ? `<#${contest.adminChannelId}>` : "Not set", inline: true },
+      { name: "Admin channel", value: adminChannelId ? `<#${adminChannelId}>` : "Not set", inline: true },
       { name: "Submission channel", value: `<#${contest.submissionChannelId}>`, inline: true },
       { name: "Submission Type", value: `\`${contest.submissionType}\``, inline: true },
       { name: "Submission open date", value: `<t:${submissionOpen}:R>`, inline: true },

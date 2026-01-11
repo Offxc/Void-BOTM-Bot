@@ -2,6 +2,7 @@ import type { FileUploadComponentData, LabelComponentData, SendableChannels, Tex
 import { ButtonStyle, ComponentType, TextInputStyle } from "discord.js";
 import type { ContestDocument } from "../../database/models/Contest.model";
 import Emojis from "../../constants/emojis";
+import config from "../../config";
 import { Contest } from "../../database/models/Contest.model";
 import { ContestSubmission, ContestSubmissionStatus } from "../../database/models/ContestSubmission.model";
 import { buttonComponents } from "../interactions/components";
@@ -35,6 +36,7 @@ function createFileUploadLabel(options: {
 }
 
 export default function setupContestInteractions({ contestId, submissionType, adminChannelId }: ContestDocument): void {
+  const resolvedAdminChannelId = adminChannelId ?? config.adminChannelId;
   buttonComponents.set(`submit-contest-${contestId}`, {
     allowedUsers: "all",
     async callback(interaction) {
@@ -174,8 +176,8 @@ export default function setupContestInteractions({ contestId, submissionType, ad
     buttonComponents.set(`${modal.id}-lgtm`, {
       allowedUsers: [modal.user.id],
       async callback(interaction) {
-        if (isImageSubmission && adminChannelId) {
-          const adminChannel = modal.client.channels.resolve(adminChannelId) as null | (SendableChannels & TextBasedChannel);
+        if (isImageSubmission && resolvedAdminChannelId) {
+          const adminChannel = modal.client.channels.resolve(resolvedAdminChannelId) as null | (SendableChannels & TextBasedChannel);
           if (adminChannel) {
             await adminChannel.send(generateBuildCheckMessage(contestSubmission));
           }

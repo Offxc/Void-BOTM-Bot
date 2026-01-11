@@ -2,6 +2,7 @@ import { ApplicationCommandOptionType, ChannelType } from "discord.js";
 import type { SecondLevelChatInputCommand } from "..";
 import dateAutocomplete, { parseContestDate } from "../../../constants/autocompletes/date";
 import Emojis from "../../../constants/emojis";
+import config from "../../../config";
 import { Contest } from "../../../database/models/Contest.model";
 import { setupJobs } from "../../../handlers/contestSubmissions";
 import setupContestInteractions from "../../../handlers/contestSubmissions/setupContestInteractions";
@@ -15,16 +16,6 @@ export default {
       type: ApplicationCommandOptionType.String,
       name: "name",
       description: "The name of the contest",
-      required: true,
-    },
-    {
-      type: ApplicationCommandOptionType.String,
-      name: "submission_type",
-      description: "The type of entry (image or text)",
-      choices: [
-        { name: "Image submission", value: "image" },
-        { name: "Text submission", value: "text" },
-      ],
       required: true,
     },
     {
@@ -68,17 +59,6 @@ export default {
     },
     {
       type: ApplicationCommandOptionType.Channel,
-      name: "admin_channel",
-      description: "The channel for staff build checks and results",
-      channelTypes: [
-        ChannelType.PrivateThread,
-        ChannelType.PublicThread,
-        ChannelType.GuildText,
-      ],
-      required: true,
-    },
-    {
-      type: ApplicationCommandOptionType.Channel,
       name: "submission_channel",
       description: "The channel to post submissions to",
       channelTypes: [
@@ -101,13 +81,13 @@ export default {
   ],
   async execute(interaction) {
     const name = interaction.options.getString("name", true);
-    const submissionType = interaction.options.getString("submission_type", true) as "image" | "text";
+    const submissionType = "image";
     const submissionOpenedDate = parseContestDate(interaction.options.getString("submission_open_date", true));
     const submissionClosedDate = parseContestDate(interaction.options.getString("submission_close_date", true));
     const votingOpenedDate = parseContestDate(interaction.options.getString("voting_open_date", true));
     const votingClosedDate = parseContestDate(interaction.options.getString("voting_close_date", true));
     const reviewChannelId = interaction.options.getChannel("review_channel")?.id;
-    const adminChannelId = interaction.options.getChannel("admin_channel", true).id;
+    const adminChannelId = config.adminChannelId;
     const submissionChannelId = interaction.options.getChannel("submission_channel", true).id;
     const maxSubmissionsPerUser = interaction.options.getInteger("max_submissions_per_user") ?? 1;
     const maxVotesPerUser = interaction.options.getInteger("max_votes_per_user") ?? 1;
