@@ -8,18 +8,6 @@ export function generateSubmissionEmbeds(submission: ContestSubmissionDocument):
   const footer = { text: `${submission.contestId}-${submission.submissionId}` };
   const timestamp = submission.submittedAt.toISOString();
 
-  if (submission.submissionType === "text") {
-    return [
-      {
-        title: submission.title,
-        description: submission.submission,
-        footer,
-        timestamp,
-        color: Colors.Blurple,
-      },
-    ];
-  }
-
   const images = (submission.submissionImages?.length ? submission.submissionImages : [submission.submission])
     .filter(Boolean)
     .slice(0, maxImagesPerSubmission);

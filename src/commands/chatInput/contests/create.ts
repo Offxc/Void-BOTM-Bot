@@ -48,17 +48,6 @@ export default {
     },
     {
       type: ApplicationCommandOptionType.Channel,
-      name: "review_channel",
-      description: "The channel to post submissions to for review",
-      channelTypes: [
-        ChannelType.PrivateThread,
-        ChannelType.PublicThread,
-        ChannelType.GuildText,
-      ],
-      required: false,
-    },
-    {
-      type: ApplicationCommandOptionType.Channel,
       name: "submission_channel",
       description: "The channel to post submissions to",
       channelTypes: [
@@ -68,29 +57,17 @@ export default {
       ],
       required: true,
     },
-    {
-      type: ApplicationCommandOptionType.Integer,
-      name: "max_submissions_per_user",
-      description: "The number of submissions allowed per user",
-    },
-    {
-      type: ApplicationCommandOptionType.Integer,
-      name: "max_votes_per_user",
-      description: "The number of votes allowed per user",
-    },
   ],
   async execute(interaction) {
     const name = interaction.options.getString("name", true);
-    const submissionType = "image";
     const submissionOpenedDate = parseContestDate(interaction.options.getString("submission_open_date", true));
     const submissionClosedDate = parseContestDate(interaction.options.getString("submission_close_date", true));
     const votingOpenedDate = parseContestDate(interaction.options.getString("voting_open_date", true));
     const votingClosedDate = parseContestDate(interaction.options.getString("voting_close_date", true));
-    const reviewChannelId = interaction.options.getChannel("review_channel")?.id;
     const adminChannelId = config.adminChannelId;
     const submissionChannelId = interaction.options.getChannel("submission_channel", true).id;
-    const maxSubmissionsPerUser = interaction.options.getInteger("max_submissions_per_user") ?? 1;
-    const maxVotesPerUser = interaction.options.getInteger("max_votes_per_user") ?? 1;
+    const maxSubmissionsPerUser = 1;
+    const maxVotesPerUser = 1;
 
     if (!submissionOpenedDate || !submissionClosedDate || !votingOpenedDate || !votingClosedDate) {
       return void interaction.reply({
@@ -120,7 +97,7 @@ export default {
       });
     }
 
-    const contest = new Contest({ name, submissionType, submissionOpenedDate, submissionClosedDate, votingOpenedDate, votingClosedDate, reviewChannelId, adminChannelId, submissionChannelId, maxSubmissionsPerUser, maxVotesPerUser });
+    const contest = new Contest({ name, submissionOpenedDate, submissionClosedDate, votingOpenedDate, votingClosedDate, adminChannelId, submissionChannelId, maxSubmissionsPerUser, maxVotesPerUser });
     await contest.save();
 
     setupContestInteractions(contest);

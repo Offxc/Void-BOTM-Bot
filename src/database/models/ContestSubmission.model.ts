@@ -18,7 +18,6 @@ export class ContestSubmissionSchema {
   @prop({ type: String, required: true }) submission!: string;
   @prop({ type: () => [String] }) submissionImages?: string[];
   @prop({ type: String, default: () => (Math.random() + 1).toString(16).substring(2, 8) }) submissionId!: string;
-  @prop({ type: String, required: true }) submissionType!: "image" | "text";
   @prop({ type: Date, default: Date.now }) submittedAt!: Date;
   @prop({ type: String, required: true }) title!: string;
 }

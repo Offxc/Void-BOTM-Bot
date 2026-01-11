@@ -10,6 +10,8 @@ import { ContestVoteEntry } from "../../../database/models/ContestVoteEntry.mode
 import mainLogger from "../../../utils/logger/main";
 import { buttonComponents } from "../../interactions/components";
 
+const maxVotesPerUser = 1;
+
 function generateSubmittedMessage(submission: ContestSubmissionDocument, votingEnd = false): Omit<MessageEditOptions, "content" | "embeds" | "flags"> & Pick<MessageCreateOptions, "content" | "embeds"> {
   return {
     content: `Submission by <@${submission.authorId}>.`,
@@ -110,7 +112,7 @@ buttonComponents.set("contest-submission-vote", {
       });
     }
 
-    if (votes.length >= contest.maxVotesPerUser) {
+    if (votes.length >= maxVotesPerUser) {
       const submissionsVoted = await ContestSubmission.find({ contestId }).then(submissions => submissions.filter(submission => votes.some(vote => vote.submissionId === submission.submissionId)));
       return void interaction.reply({
         content: `${Emojis.ANGER} You have reached the maximum number of votes for this contest. You've currently voted for the following submissions:\n${votes.map(vote => {

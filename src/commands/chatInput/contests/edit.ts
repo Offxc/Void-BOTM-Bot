@@ -34,7 +34,6 @@ export default {
     }
 
     const name = interaction.options.getString("name") ?? contest.name;
-    const submissionType = contest.submissionType;
     const submissionOpenedDateInput = interaction.options.getString("submission_open_date");
     const submissionClosedDateInput = interaction.options.getString("submission_close_date");
     const votingOpenedDateInput = interaction.options.getString("voting_open_date");
@@ -43,11 +42,10 @@ export default {
     const submissionClosedDate = submissionClosedDateInput ? parseContestDate(submissionClosedDateInput) : contest.submissionClosedDate;
     const votingOpenedDate = votingOpenedDateInput ? parseContestDate(votingOpenedDateInput) : contest.votingOpenedDate;
     const votingClosedDate = votingClosedDateInput ? parseContestDate(votingClosedDateInput) : contest.votingClosedDate;
-    const reviewChannelId = interaction.options.getChannel("review_channel")?.id ?? contest.reviewChannelId;
     const adminChannelId = config.adminChannelId || contest.adminChannelId;
     const submissionChannelId = interaction.options.getChannel("submission_channel")?.id ?? contest.submissionChannelId;
-    const maxSubmissionsPerUser = interaction.options.getInteger("max_submissions_per_user") ?? contest.maxSubmissionsPerUser;
-    const maxVotesPerUser = interaction.options.getInteger("max_votes_per_user") ?? contest.maxVotesPerUser;
+    const maxSubmissionsPerUser = 1;
+    const maxVotesPerUser = 1;
 
     if (!submissionOpenedDate || !submissionClosedDate || !votingOpenedDate || !votingClosedDate) {
       return void interaction.reply({
@@ -77,7 +75,7 @@ export default {
       });
     }
 
-    Object.assign(contest, { name, submissionType, submissionOpenedDate, submissionClosedDate, votingOpenedDate, votingClosedDate, reviewChannelId, adminChannelId, submissionChannelId, maxSubmissionsPerUser, maxVotesPerUser });
+    Object.assign(contest, { name, submissionOpenedDate, submissionClosedDate, votingOpenedDate, votingClosedDate, adminChannelId, submissionChannelId, maxSubmissionsPerUser, maxVotesPerUser });
     await contest.save();
 
     setupContestInteractions(contest);

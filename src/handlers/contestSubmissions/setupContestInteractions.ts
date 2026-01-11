@@ -10,6 +10,7 @@ import { createModalTextInput, modals } from "../interactions/modals";
 import { generateBuildCheckMessage, generateSubmissionEmbeds } from "./messageGenerators";
 
 const pendingMessageLink = "pending";
+const maxSubmissionsPerUser = 1;
 
 function createFileUploadLabel(options: {
   customId: string;
@@ -35,7 +36,7 @@ function createFileUploadLabel(options: {
   };
 }
 
-export default function setupContestInteractions({ contestId, submissionType, adminChannelId }: ContestDocument): void {
+export default function setupContestInteractions({ contestId, adminChannelId }: ContestDocument): void {
   const resolvedAdminChannelId = adminChannelId ?? config.adminChannelId;
   buttonComponents.set(`submit-contest-${contestId}`, {
     allowedUsers: "all",
@@ -65,42 +66,30 @@ export default function setupContestInteractions({ contestId, submissionType, ad
 
       // check if user already submitted
       const userSubmissions = await ContestSubmission.find({ contestId, authorId: interaction.user.id }).then(submissions => submissions.filter(submission => submission.status !== ContestSubmissionStatus.REJECTED));
-      if (userSubmissions.length >= contest.maxSubmissionsPerUser) {
+      if (userSubmissions.length >= maxSubmissionsPerUser) {
         return void interaction.reply({
           content: `${Emojis.ANGER} You have reached the maximum number of submissions for this contest.`,
           ephemeral: true,
         });
       }
 
-      const submissionComponents = contest.submissionType === "image" ?
-        [
-          createFileUploadLabel({
-            customId: "submission_images",
-            label: "Upload up to 3 images",
-            description: "You can select up to 3 files in one upload.",
-            required: true,
-            minValues: 1,
-            maxValues: 3,
-          }),
-          createModalTextInput({
-            style: TextInputStyle.Short,
-            customId: "build_coordinates",
-            label: "What are the co-ordinates of your build?",
-            placeholder: "x, y, z",
-            required: true,
-          }),
-        ] :
-        [
-          createModalTextInput({
-            style: TextInputStyle.Paragraph,
-            customId: "submission",
-            label: "Submission text",
-            placeholder: "The Big Wumpus ate a big apple and became the apple. The End.",
-            minLength: 1,
-            maxLength: 2048,
-            required: true,
-          }),
-        ];
+      const submissionComponents = [
+        createFileUploadLabel({
+          customId: "submission_images",
+          label: "Upload up to 3 images",
+          description: "You can select up to 3 files in one upload.",
+          required: true,
+          minValues: 1,
+          maxValues: 3,
+        }),
+        createModalTextInput({
+          style: TextInputStyle.Short,
+          customId: "build_coordinates",
+          label: "What are the co-ordinates of your build?",
+          placeholder: "x, y, z",
+          required: true,
+        }),
+      ];
 
       return void interaction.showModal({
         title: `Submission for ${contest.name}`,
@@ -124,59 +113,52 @@ export default function setupContestInteractions({ contestId, submissionType, ad
   modals.set(`submit-contest-modal-${contestId}`, modal => {
     const deferred = modal.deferReply({ ephemeral: true });
 
-    const isImageSubmission = submissionType === "image";
-    const previewContent = isImageSubmission
-      ? `${Emojis.SPARKLE} Does this look good? Make sure you can see all images in the preview.`
-      : `${Emojis.SPARKLE} Does this look good? Make sure you can see the text in the preview.`;
+    const previewContent = `${Emojis.SPARKLE} Does this look good? Make sure you can see all images in the preview.`;
 
     let title = modal.fields.getTextInputValue("title").trim();
     let submission = "";
     let submissionImages: string[] = [];
     let buildCoordinates = "";
 
-    if (isImageSubmission) {
-      const uploadedImages = modal.fields.getUploadedFiles("submission_images", true);
-      submissionImages = Array.from(uploadedImages.values())
-        .map(attachment => attachment.url)
-        .filter(Boolean)
-        .slice(0, 3);
-      buildCoordinates = modal.fields.getTextInputValue("build_coordinates").trim();
+    const uploadedImages = modal.fields.getUploadedFiles("submission_images", true);
+    submissionImages = Array.from(uploadedImages.values())
+      .map(attachment => attachment.url)
+      .filter(Boolean)
+      .slice(0, 3);
+    buildCoordinates = modal.fields.getTextInputValue("build_coordinates").trim();
 
-      if (!submissionImages.length) {
-        return void deferred.then(() => modal.editReply({
-          content: `${Emojis.ANGER} Please upload at least one image.`,
-          components: [],
-          embeds: [],
-        }));
-      }
-
-      if (!buildCoordinates) {
-        return void deferred.then(() => modal.editReply({
-          content: `${Emojis.ANGER} Please provide the co-ordinates of your build.`,
-          components: [],
-          embeds: [],
-        }));
-      }
-
-      submission = submissionImages[0] ?? "";
-    } else {
-      submission = modal.fields.getTextInputValue("submission").trim();
+    if (!submissionImages.length) {
+      return void deferred.then(() => modal.editReply({
+        content: `${Emojis.ANGER} Please upload at least one image.`,
+        components: [],
+        embeds: [],
+      }));
     }
+
+    if (!buildCoordinates) {
+      return void deferred.then(() => modal.editReply({
+        content: `${Emojis.ANGER} Please provide the co-ordinates of your build.`,
+        components: [],
+        embeds: [],
+      }));
+    }
+
+    submission = submissionImages[0] ?? "";
 
     const contestSubmission = new ContestSubmission({
       contestId,
       title,
       submission,
-      submissionType,
       authorId: modal.user.id,
       messageLink: pendingMessageLink,
-      ...(isImageSubmission ? { submissionImages, buildCoordinates } : {}),
+      submissionImages,
+      buildCoordinates,
     });
 
     buttonComponents.set(`${modal.id}-lgtm`, {
       allowedUsers: [modal.user.id],
       async callback(interaction) {
-        if (isImageSubmission && resolvedAdminChannelId) {
+        if (resolvedAdminChannelId) {
           const adminChannel = modal.client.channels.resolve(resolvedAdminChannelId) as null | (SendableChannels & TextBasedChannel);
           if (adminChannel) {
             await adminChannel.send(generateBuildCheckMessage(contestSubmission));
@@ -197,40 +179,36 @@ export default function setupContestInteractions({ contestId, submissionType, ad
         modals.set(`${modal.id}-edit-modal`, editModal => {
           title = editModal.fields.getTextInputValue("title").trim();
 
-          if (isImageSubmission) {
-            const uploadedImages = editModal.fields.getUploadedFiles("submission_images");
-            const uploadedUrls = uploadedImages
-              ? Array.from(uploadedImages.values()).map(attachment => attachment.url).filter(Boolean)
-              : [];
+          const uploadedImages = editModal.fields.getUploadedFiles("submission_images");
+          const uploadedUrls = uploadedImages
+            ? Array.from(uploadedImages.values()).map(attachment => attachment.url).filter(Boolean)
+            : [];
 
-            if (uploadedUrls.length) {
-              submissionImages = uploadedUrls.slice(0, 3);
-            }
-
-            buildCoordinates = editModal.fields.getTextInputValue("build_coordinates").trim();
-
-            if (!submissionImages.length) {
-              return void deferred.then(() => editModal.editReply({
-                content: `${Emojis.ANGER} Please upload at least one image.`,
-                components: [],
-                embeds: [],
-              }));
-            }
-
-            if (!buildCoordinates) {
-              return void deferred.then(() => editModal.editReply({
-                content: `${Emojis.ANGER} Please provide the co-ordinates of your build.`,
-                components: [],
-                embeds: [],
-              }));
-            }
-
-            submission = submissionImages[0] ?? "";
-            contestSubmission.submissionImages = submissionImages;
-            contestSubmission.buildCoordinates = buildCoordinates;
-          } else {
-            submission = editModal.fields.getTextInputValue("submission").trim();
+          if (uploadedUrls.length) {
+            submissionImages = uploadedUrls.slice(0, 3);
           }
+
+          buildCoordinates = editModal.fields.getTextInputValue("build_coordinates").trim();
+
+          if (!submissionImages.length) {
+            return void deferred.then(() => editModal.editReply({
+              content: `${Emojis.ANGER} Please upload at least one image.`,
+              components: [],
+              embeds: [],
+            }));
+          }
+
+          if (!buildCoordinates) {
+            return void deferred.then(() => editModal.editReply({
+              content: `${Emojis.ANGER} Please provide the co-ordinates of your build.`,
+              components: [],
+              embeds: [],
+            }));
+          }
+
+          submission = submissionImages[0] ?? "";
+          contestSubmission.submissionImages = submissionImages;
+          contestSubmission.buildCoordinates = buildCoordinates;
 
           contestSubmission.title = title;
           contestSubmission.submission = submission;
@@ -281,36 +259,21 @@ export default function setupContestInteractions({ contestId, submissionType, ad
               required: true,
               value: title,
             }),
-            ...(isImageSubmission ?
-              [
-                createFileUploadLabel({
-                  customId: "submission_images",
-                  label: "Upload up to 3 images",
-                  description: "Upload new images to replace the existing ones.",
-                  required: false,
-                  maxValues: 3,
-                }),
-                createModalTextInput({
-                  style: TextInputStyle.Short,
-                  customId: "build_coordinates",
-                  label: "What are the co-ordinates of your build?",
-                  placeholder: "x, y, z",
-                  required: true,
-                  value: buildCoordinates,
-                }),
-              ] :
-              [
-                createModalTextInput({
-                  style: TextInputStyle.Paragraph,
-                  customId: "submission",
-                  label: "Submission text",
-                  placeholder: "The Big Wumpus ate a big apple and became the apple. The End.",
-                  minLength: 1,
-                  maxLength: 2048,
-                  required: true,
-                  value: submission,
-                }),
-              ]),
+            createFileUploadLabel({
+              customId: "submission_images",
+              label: "Upload up to 3 images",
+              description: "Upload new images to replace the existing ones.",
+              required: false,
+              maxValues: 3,
+            }),
+            createModalTextInput({
+              style: TextInputStyle.Short,
+              customId: "build_coordinates",
+              label: "What are the co-ordinates of your build?",
+              placeholder: "x, y, z",
+              required: true,
+              value: buildCoordinates,
+            }),
           ],
         });
       },
