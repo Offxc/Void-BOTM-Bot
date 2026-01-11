@@ -6,7 +6,7 @@ import config from "../../../config";
 import Emojis from "../../../constants/emojis";
 import { Leaderboard } from "../../../database/models/Leaderboard.model";
 import { buttonComponents } from "../../../handlers/interactions/components";
-import { createModalTextInput, getModalTextInput, modals } from "../../../handlers/interactions/modals";
+import { createModalTextInput, modals } from "../../../handlers/interactions/modals";
 
 export default {
   name: "create",
@@ -38,8 +38,8 @@ export default {
     ]);
 
     modals.set(`${interaction.id}:create-leaderboard`, async modal => {
-      const name = getModalTextInput(modal.components, "name")!;
-      const table = getModalTextInput(modal.components, "table") ?? "";
+      const name = modal.fields.getTextInputValue("name");
+      const table = modal.fields.getTextInputValue("table") ?? "";
 
       const leaderboard = new Leaderboard({ name, table });
       const message = await channel.send(generateMessage(leaderboard));
@@ -172,7 +172,7 @@ buttonComponents.set("leaderboard-edit", {
     });
 
     return void modals.set(`${interaction.id}:edit-leaderboard`, modal => {
-      const table = getModalTextInput(modal.components, "table")!;
+      const table = modal.fields.getTextInputValue("table");
       leaderboard.table = table;
       void leaderboard.save();
 

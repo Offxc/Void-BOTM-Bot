@@ -32,7 +32,8 @@ export function contestToEmbed(contest: ContestDocument): APIEmbed {
   return {
     title: contest.name,
     fields: [
-      { name: "Review channel", value: `<#${contest.reviewChannelId}>`, inline: true },
+      { name: "Review channel", value: contest.reviewChannelId ? `<#${contest.reviewChannelId}>` : "Not set", inline: true },
+      { name: "Admin channel", value: contest.adminChannelId ? `<#${contest.adminChannelId}>` : "Not set", inline: true },
       { name: "Submission channel", value: `<#${contest.submissionChannelId}>`, inline: true },
       { name: "Submission Type", value: `\`${contest.submissionType}\``, inline: true },
       { name: "Submission open date", value: `<t:${submissionOpen}:R>`, inline: true },

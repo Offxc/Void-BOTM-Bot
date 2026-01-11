@@ -1,12 +1,12 @@
 import type { MessageCreateOptions, MessageEditOptions, SendableChannels, TextBasedChannel } from "discord.js";
 import { ButtonStyle, ComponentType, TextInputStyle } from "discord.js";
 import type { ContestSubmissionDocument } from "../../../database/models/ContestSubmission.model";
-import { generateSubmissionEmbed } from ".";
+import { generateSubmissionEmbeds } from ".";
 import Emojis from "../../../constants/emojis";
 import { Contest } from "../../../database/models/Contest.model";
 import { ContestSubmission, ContestSubmissionStatus } from "../../../database/models/ContestSubmission.model";
 import { buttonComponents } from "../../interactions/components";
-import { createModalTextInput, getModalTextInput, modals } from "../../interactions/modals";
+import { createModalTextInput, modals } from "../../interactions/modals";
 import generateSubmittedMessage from "./submitted";
 
 buttonComponents.set("contest-review-approve", {
@@ -65,7 +65,7 @@ buttonComponents.set("contest-review-reject", {
     });
 
     return void modals.set(`contest-review-reject-modal-${contestId}-${submissionId}`, async modal => {
-      const reason = getModalTextInput(modal.components, "reason")!;
+      const reason = modal.fields.getTextInputValue("reason");
 
       const contestSubmission = await ContestSubmission.findOne({ contestId, submissionId });
       if (!contestSubmission) {
@@ -93,7 +93,7 @@ buttonComponents.set("contest-review-reject", {
               .join("\n"),
             "Send <@536491357322346499> (`BlurpleMail#8368`) a direct message for more information about its rejection if you feel that the decision is unfair.",
           ].join("\n"),
-        embeds: [generateSubmissionEmbed(contestSubmission)],
+        embeds: generateSubmissionEmbeds(contestSubmission),
       }).catch())
         .catch();
     });
@@ -103,7 +103,7 @@ buttonComponents.set("contest-review-reject", {
 function generateReviewMessage(submission: ContestSubmissionDocument): Omit<MessageEditOptions, "content" | "embeds" | "flags"> & Pick<MessageCreateOptions, "content" | "embeds"> {
   return {
     content: `Submission by <@${submission.authorId}> - needs review.`,
-    embeds: [generateSubmissionEmbed(submission)],
+    embeds: generateSubmissionEmbeds(submission),
     components: [
       {
         type: ComponentType.ActionRow,

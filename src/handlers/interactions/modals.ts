@@ -10,16 +10,6 @@ export default function modalHandler(interaction: ModalSubmitInteraction<"cached
   if (modal) void modal(interaction);
 }
 
-export function getModalTextInput(actionRows: ModalSubmitInteraction["components"], customId: string): null | string {
-  const actionRow = actionRows.find(row => row.components.some(component => component.customId === customId));
-  if (!actionRow) return null;
-
-  const textInput = actionRow.components.find(component => component.customId === customId);
-  if (!textInput) return null;
-
-  return textInput.value;
-}
-
 export function createModalTextInput(options: Omit<TextInputComponentData, "type">): ActionRowData<TextInputComponentData> {
   return {
     type: ComponentType.ActionRow,

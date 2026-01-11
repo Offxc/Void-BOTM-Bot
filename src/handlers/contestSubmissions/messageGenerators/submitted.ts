@@ -1,7 +1,7 @@
 import type { MessageCreateOptions, MessageEditOptions } from "discord.js";
 import { ButtonStyle, ComponentType } from "discord.js";
 import type { ContestSubmissionDocument } from "../../../database/models/ContestSubmission.model";
-import { generateSubmissionEmbed } from ".";
+import { generateSubmissionEmbeds } from ".";
 import config from "../../../config";
 import Emojis from "../../../constants/emojis";
 import { Contest } from "../../../database/models/Contest.model";
@@ -13,7 +13,7 @@ import { buttonComponents } from "../../interactions/components";
 function generateSubmittedMessage(submission: ContestSubmissionDocument, votingEnd = false): Omit<MessageEditOptions, "content" | "embeds" | "flags"> & Pick<MessageCreateOptions, "content" | "embeds"> {
   return {
     content: `Submission by <@${submission.authorId}>.`,
-    embeds: [generateSubmissionEmbed(submission)],
+    embeds: generateSubmissionEmbeds(submission),
     allowedMentions: { users: [submission.authorId] },
     components: votingEnd ?
       [] :

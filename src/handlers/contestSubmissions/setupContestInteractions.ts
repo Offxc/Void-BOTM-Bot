@@ -1,15 +1,40 @@
-import type { SendableChannels, TextBasedChannel } from "discord.js";
+import type { FileUploadComponentData, LabelComponentData, SendableChannels, TextBasedChannel } from "discord.js";
 import { ButtonStyle, ComponentType, TextInputStyle } from "discord.js";
 import type { ContestDocument } from "../../database/models/Contest.model";
 import Emojis from "../../constants/emojis";
 import { Contest } from "../../database/models/Contest.model";
 import { ContestSubmission, ContestSubmissionStatus } from "../../database/models/ContestSubmission.model";
-import { testLink } from "../../utils/links";
 import { buttonComponents } from "../interactions/components";
-import { createModalTextInput, getModalTextInput, modals } from "../interactions/modals";
-import { generateReviewMessage, generateSubmissionEmbed } from "./messageGenerators";
+import { createModalTextInput, modals } from "../interactions/modals";
+import { generateBuildCheckMessage, generateSubmissionEmbeds } from "./messageGenerators";
 
-export default function setupContestInteractions({ contestId, submissionType, reviewChannelId }: ContestDocument): void {
+const pendingMessageLink = "pending";
+
+function createFileUploadLabel(options: {
+  customId: string;
+  label: string;
+  description?: string;
+  required?: boolean;
+  minValues?: number;
+  maxValues?: number;
+}): LabelComponentData {
+  const component: FileUploadComponentData = {
+    type: ComponentType.FileUpload,
+    customId: options.customId,
+    ...(options.required ? { required: true } : {}),
+    ...(typeof options.minValues === "number" ? { minValues: options.minValues } : {}),
+    ...(typeof options.maxValues === "number" ? { maxValues: options.maxValues } : {}),
+  };
+
+  return {
+    type: ComponentType.Label,
+    label: options.label,
+    ...(options.description ? { description: options.description } : {}),
+    component,
+  };
+}
+
+export default function setupContestInteractions({ contestId, submissionType, adminChannelId }: ContestDocument): void {
   buttonComponents.set(`submit-contest-${contestId}`, {
     allowedUsers: "all",
     async callback(interaction) {
@@ -45,6 +70,36 @@ export default function setupContestInteractions({ contestId, submissionType, re
         });
       }
 
+      const submissionComponents = contest.submissionType === "image" ?
+        [
+          createFileUploadLabel({
+            customId: "submission_images",
+            label: "Upload up to 3 images",
+            description: "You can select up to 3 files in one upload.",
+            required: true,
+            minValues: 1,
+            maxValues: 3,
+          }),
+          createModalTextInput({
+            style: TextInputStyle.Short,
+            customId: "build_coordinates",
+            label: "What are the co-ordinates of your build?",
+            placeholder: "x, y, z",
+            required: true,
+          }),
+        ] :
+        [
+          createModalTextInput({
+            style: TextInputStyle.Paragraph,
+            customId: "submission",
+            label: "Submission text",
+            placeholder: "The Big Wumpus ate a big apple and became the apple. The End.",
+            minLength: 1,
+            maxLength: 2048,
+            required: true,
+          }),
+        ];
+
       return void interaction.showModal({
         title: `Submission for ${contest.name}`,
         customId: `submit-contest-modal-${contestId}`,
@@ -58,23 +113,7 @@ export default function setupContestInteractions({ contestId, submissionType, re
             maxLength: 32,
             required: true,
           }),
-          createModalTextInput(contest.submissionType === "text" ?
-            {
-              style: TextInputStyle.Paragraph,
-              customId: "submission",
-              label: "Submission text",
-              placeholder: "The Big Wumpus ate a big apple and became the apple. The End.",
-              minLength: 1,
-              maxLength: 2048,
-              required: true,
-            } :
-            {
-              style: TextInputStyle.Short,
-              customId: "submission",
-              label: "Submission image URL",
-              placeholder: "https://i.imgur.com/wumpus.png",
-              required: true,
-            }),
+          ...submissionComponents,
         ],
       });
     },
@@ -83,26 +122,67 @@ export default function setupContestInteractions({ contestId, submissionType, re
   modals.set(`submit-contest-modal-${contestId}`, modal => {
     const deferred = modal.deferReply({ ephemeral: true });
 
-    let title = getModalTextInput(modal.components, "title")!;
-    let submission = getModalTextInput(modal.components, "submission")!;
-    if (submissionType === "image" && !testLink(submission)) {
-      return void deferred.then(() => modal.editReply({
-        content: `${Emojis.ANGER} Invalid image URL.`,
-        components: [],
-        embeds: [],
-      }));
+    const isImageSubmission = submissionType === "image";
+    const previewContent = isImageSubmission
+      ? `${Emojis.SPARKLE} Does this look good? Make sure you can see all images in the preview.`
+      : `${Emojis.SPARKLE} Does this look good? Make sure you can see the text in the preview.`;
+
+    let title = modal.fields.getTextInputValue("title").trim();
+    let submission = "";
+    let submissionImages: string[] = [];
+    let buildCoordinates = "";
+
+    if (isImageSubmission) {
+      const uploadedImages = modal.fields.getUploadedFiles("submission_images", true);
+      submissionImages = Array.from(uploadedImages.values())
+        .map(attachment => attachment.url)
+        .filter(Boolean)
+        .slice(0, 3);
+      buildCoordinates = modal.fields.getTextInputValue("build_coordinates").trim();
+
+      if (!submissionImages.length) {
+        return void deferred.then(() => modal.editReply({
+          content: `${Emojis.ANGER} Please upload at least one image.`,
+          components: [],
+          embeds: [],
+        }));
+      }
+
+      if (!buildCoordinates) {
+        return void deferred.then(() => modal.editReply({
+          content: `${Emojis.ANGER} Please provide the co-ordinates of your build.`,
+          components: [],
+          embeds: [],
+        }));
+      }
+
+      submission = submissionImages[0] ?? "";
+    } else {
+      submission = modal.fields.getTextInputValue("submission").trim();
     }
 
-    const contestSubmission = new ContestSubmission({ contestId, title, submission, submissionType, authorId: modal.user.id });
+    const contestSubmission = new ContestSubmission({
+      contestId,
+      title,
+      submission,
+      submissionType,
+      authorId: modal.user.id,
+      messageLink: pendingMessageLink,
+      ...(isImageSubmission ? { submissionImages, buildCoordinates } : {}),
+    });
 
     buttonComponents.set(`${modal.id}-lgtm`, {
       allowedUsers: [modal.user.id],
       async callback(interaction) {
-        const message = await (modal.client.channels.resolve(reviewChannelId) as SendableChannels & TextBasedChannel).send(generateReviewMessage(contestSubmission));
-        contestSubmission.messageLink = message.url;
+        if (isImageSubmission && adminChannelId) {
+          const adminChannel = modal.client.channels.resolve(adminChannelId) as null | (SendableChannels & TextBasedChannel);
+          if (adminChannel) {
+            await adminChannel.send(generateBuildCheckMessage(contestSubmission));
+          }
+        }
         void contestSubmission.save();
         return void interaction.update({
-          content: `${Emojis.THUMBSUP} Submission is now sent.`,
+          content: `${Emojis.THUMBSUP} Submission received. It will be posted when voting starts.`,
           components: [],
           embeds: [],
         });
@@ -113,14 +193,41 @@ export default function setupContestInteractions({ contestId, submissionType, re
       allowedUsers: [modal.user.id],
       callback(interaction) {
         modals.set(`${modal.id}-edit-modal`, editModal => {
-          title = getModalTextInput(editModal.components, "title")!;
-          submission = getModalTextInput(editModal.components, "submission")!;
-          if (submissionType === "image" && !testLink(submission)) {
-            return void deferred.then(() => editModal.editReply({
-              content: `${Emojis.ANGER} Invalid image URL.`,
-              components: [],
-              embeds: [],
-            }));
+          title = editModal.fields.getTextInputValue("title").trim();
+
+          if (isImageSubmission) {
+            const uploadedImages = editModal.fields.getUploadedFiles("submission_images");
+            const uploadedUrls = uploadedImages
+              ? Array.from(uploadedImages.values()).map(attachment => attachment.url).filter(Boolean)
+              : [];
+
+            if (uploadedUrls.length) {
+              submissionImages = uploadedUrls.slice(0, 3);
+            }
+
+            buildCoordinates = editModal.fields.getTextInputValue("build_coordinates").trim();
+
+            if (!submissionImages.length) {
+              return void deferred.then(() => editModal.editReply({
+                content: `${Emojis.ANGER} Please upload at least one image.`,
+                components: [],
+                embeds: [],
+              }));
+            }
+
+            if (!buildCoordinates) {
+              return void deferred.then(() => editModal.editReply({
+                content: `${Emojis.ANGER} Please provide the co-ordinates of your build.`,
+                components: [],
+                embeds: [],
+              }));
+            }
+
+            submission = submissionImages[0] ?? "";
+            contestSubmission.submissionImages = submissionImages;
+            contestSubmission.buildCoordinates = buildCoordinates;
+          } else {
+            submission = editModal.fields.getTextInputValue("submission").trim();
           }
 
           contestSubmission.title = title;
@@ -128,8 +235,8 @@ export default function setupContestInteractions({ contestId, submissionType, re
 
           if (!editModal.isFromMessage()) return;
           return void editModal.update({
-            content: `${Emojis.SPARKLE} Does this look good? Make sure you can see the ${submissionType} in the preview.`,
-            embeds: [generateSubmissionEmbed(contestSubmission)],
+            content: previewContent,
+            embeds: generateSubmissionEmbeds(contestSubmission),
             components: [
               {
                 type: ComponentType.ActionRow,
@@ -172,25 +279,36 @@ export default function setupContestInteractions({ contestId, submissionType, re
               required: true,
               value: title,
             }),
-            createModalTextInput(submissionType === "text" ?
-              {
-                style: TextInputStyle.Paragraph,
-                customId: "submission",
-                label: "Submission text",
-                placeholder: "The Big Wumpus ate a big apple and became the apple. The End.",
-                minLength: 1,
-                maxLength: 2048,
-                required: true,
-                value: submission,
-              } :
-              {
-                style: TextInputStyle.Short,
-                customId: "submission",
-                label: "Submission image URL",
-                placeholder: "https://i.imgur.com/wumpus.png",
-                required: true,
-                value: submission,
-              }),
+            ...(isImageSubmission ?
+              [
+                createFileUploadLabel({
+                  customId: "submission_images",
+                  label: "Upload up to 3 images",
+                  description: "Upload new images to replace the existing ones.",
+                  required: false,
+                  maxValues: 3,
+                }),
+                createModalTextInput({
+                  style: TextInputStyle.Short,
+                  customId: "build_coordinates",
+                  label: "What are the co-ordinates of your build?",
+                  placeholder: "x, y, z",
+                  required: true,
+                  value: buildCoordinates,
+                }),
+              ] :
+              [
+                createModalTextInput({
+                  style: TextInputStyle.Paragraph,
+                  customId: "submission",
+                  label: "Submission text",
+                  placeholder: "The Big Wumpus ate a big apple and became the apple. The End.",
+                  minLength: 1,
+                  maxLength: 2048,
+                  required: true,
+                  value: submission,
+                }),
+              ]),
           ],
         });
       },
@@ -208,8 +326,8 @@ export default function setupContestInteractions({ contestId, submissionType, re
     });
 
     return void deferred.then(() => modal.editReply({
-      content: `${Emojis.SPARKLE} Does this look good? Make sure you can see the ${submissionType} in the preview.`,
-      embeds: [generateSubmissionEmbed(contestSubmission)],
+      content: previewContent,
+      embeds: generateSubmissionEmbeds(contestSubmission),
       components: [
         {
           type: ComponentType.ActionRow,

@@ -4,6 +4,7 @@ import contestAutocomplete from "../../../constants/autocompletes/contest";
 import Emojis from "../../../constants/emojis";
 import { ContestSubmission, ContestSubmissionStatus } from "../../../database/models/ContestSubmission.model";
 import { ContestVoteEntry } from "../../../database/models/ContestVoteEntry.model";
+import { testLink } from "../../../utils/links";
 
 export default {
   name: "list_participants",
@@ -86,7 +87,11 @@ export default {
             },
             {
               name: "Status",
-              value: submissionChunk.map(submission => submission.status === ContestSubmissionStatus.REJECTED ? "REJECTED" : `[${submission.status}](${submission.messageLink})`).join("\n"),
+              value: submissionChunk.map(submission => {
+                if (submission.status === ContestSubmissionStatus.REJECTED) return "REJECTED";
+                if (testLink(submission.messageLink)) return `[${submission.status}](${submission.messageLink})`;
+                return submission.status;
+              }).join("\n"),
               inline: true,
             },
           ],
