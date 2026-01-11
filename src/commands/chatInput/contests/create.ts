@@ -48,8 +48,8 @@ export default {
     },
     {
       type: ApplicationCommandOptionType.Channel,
-      name: "submission_channel",
-      description: "The channel to post submissions to",
+      name: "voting_channel",
+      description: "The channel to post contest entries for voting",
       channelTypes: [
         ChannelType.PrivateThread,
         ChannelType.PublicThread,
@@ -65,7 +65,7 @@ export default {
     const votingOpenedDate = parseContestDate(interaction.options.getString("voting_open_date", true));
     const votingClosedDate = parseContestDate(interaction.options.getString("voting_close_date", true));
     const adminChannelId = config.adminChannelId;
-    const submissionChannelId = interaction.options.getChannel("submission_channel", true).id;
+    const submissionChannelId = interaction.options.getChannel("voting_channel", true).id;
     const maxSubmissionsPerUser = 1;
     const maxVotesPerUser = 1;
 

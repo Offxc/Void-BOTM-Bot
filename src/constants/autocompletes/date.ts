@@ -27,7 +27,7 @@ export function parseContestDate(input: string): null | Date {
 
 function parseDayFirstDate(input: string): null | Date {
   const trimmed = input.trim();
-  const match = trimmed.match(/^(\d{1,2})[./-](\d{1,2})(?:[./-](\d{2,4}))?$/);
+  const match = trimmed.match(/^(\d{1,2})[./-](\d{1,2})(?:[./-](\d{2,4}))?(?:\s+(\d{1,2})(?::(\d{1,2}))?(?::(\d{1,2}))?\s*(am|pm)?)?$/i);
   if (!match) return null;
 
   const day = Number(match[1]);
@@ -39,16 +39,41 @@ function parseDayFirstDate(input: string): null | Date {
   if (!Number.isInteger(year)) return null;
   if (year < 100) year += 2000;
 
-  const candidate = new Date(year, month - 1, day);
+  const hasTime = Boolean(match[4]);
+  let hours = match[4] ? Number(match[4]) : 0;
+  let minutes = match[5] ? Number(match[5]) : 0;
+  let seconds = match[6] ? Number(match[6]) : 0;
+  const meridiem = match[7]?.toLowerCase();
+
+  if (meridiem) {
+    if (hours < 1 || hours > 12) return null;
+    if (meridiem === "am") {
+      hours = hours === 12 ? 0 : hours;
+    } else if (meridiem === "pm") {
+      hours = hours === 12 ? 12 : hours + 12;
+    }
+  } else if (hours < 0 || hours > 23) {
+    return null;
+  }
+
+  if (minutes < 0 || minutes > 59 || seconds < 0 || seconds > 59) return null;
+
+  const candidate = new Date(year, month - 1, day, hours, minutes, seconds);
   if (candidate.getFullYear() !== year || candidate.getMonth() !== month - 1 || candidate.getDate() !== day) {
     return null;
   }
 
   if (!match[3]) {
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const candidateDate = new Date(candidate.getFullYear(), candidate.getMonth(), candidate.getDate());
-    if (candidateDate < today) {
-      candidate.setFullYear(candidate.getFullYear() + 1);
+    if (hasTime) {
+      if (candidate.getTime() < now.getTime()) {
+        candidate.setFullYear(candidate.getFullYear() + 1);
+      }
+    } else {
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const candidateDate = new Date(candidate.getFullYear(), candidate.getMonth(), candidate.getDate());
+      if (candidateDate < today) {
+        candidate.setFullYear(candidate.getFullYear() + 1);
+      }
     }
   }
 

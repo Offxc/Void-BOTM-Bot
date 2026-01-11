@@ -37,7 +37,7 @@ export function contestToEmbed(contest: ContestDocument): APIEmbed {
     title: contest.name,
     fields: [
       { name: "Admin channel", value: adminChannelId ? `<#${adminChannelId}>` : "Not set", inline: true },
-      { name: "Submission channel", value: `<#${contest.submissionChannelId}>`, inline: true },
+      { name: "Voting channel", value: `<#${contest.submissionChannelId}>`, inline: true },
       { name: "Submission open date", value: `<t:${submissionOpen}:R>`, inline: true },
       { name: "Submission close date", value: `<t:${submissionClose}:R>`, inline: true },
       { name: "Submissions per user", value: String(maxSubmissionsPerUser), inline: true },
