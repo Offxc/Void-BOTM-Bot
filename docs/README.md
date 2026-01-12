@@ -1,12 +1,10 @@
-# blurple-contests
+# Void-BOTM
 
-A bot made for the Blurple Events team that automates the creation of contests and leaderboard, and also has a built-in music player.
+A bot made for the VoidSMP Staff team that automates the creation of Build Of The Months competitions.
 
 ## Purpose
 
-We had an art contest in 2021 where people could submit their art and get voted on. What we forgot to plan was how we could anonymously register these votes and export out a leaderboard as well.
-
-This bot basically does that. The Events team can now create contests and leaderboards (I will explain both of these types further down) - and it also has a nice music feature as well for karaoke nights or other events.
+We run monthly build competitions on our server where people could submit their builds and get voted on. This is quite a work-intensive process for those involved in running it - this bot solves that and allows us to anonymously register votes and even export out a leaderboard as well.
 
 ## Setup
 

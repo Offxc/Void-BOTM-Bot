@@ -30,6 +30,7 @@ export function contestToEmbed(contest: ContestDocument): APIEmbed {
   const votingOpen = Math.round(contest.votingOpenedDate.getTime() / 1000);
   const votingClose = Math.round(contest.votingClosedDate.getTime() / 1000);
   const adminChannelId = contest.adminChannelId ?? config.adminChannelId;
+  const votingChannelId = config.votingChannelId || contest.submissionChannelId;
   const maxSubmissionsPerUser = 1;
   const maxVotesPerUser = 1;
 
@@ -37,7 +38,7 @@ export function contestToEmbed(contest: ContestDocument): APIEmbed {
     title: contest.name,
     fields: [
       { name: "Admin channel", value: adminChannelId ? `<#${adminChannelId}>` : "Not set", inline: true },
-      { name: "Voting channel", value: `<#${contest.submissionChannelId}>`, inline: true },
+      { name: "Voting channel", value: `<#${votingChannelId}>`, inline: true },
       { name: "Submission open date", value: `<t:${submissionOpen}:R>`, inline: true },
       { name: "Submission close date", value: `<t:${submissionClose}:R>`, inline: true },
       { name: "Submissions per user", value: String(maxSubmissionsPerUser), inline: true },

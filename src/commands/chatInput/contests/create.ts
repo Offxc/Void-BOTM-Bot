@@ -1,4 +1,4 @@
-import { ApplicationCommandOptionType, ChannelType } from "discord.js";
+import { ApplicationCommandOptionType } from "discord.js";
 import type { SecondLevelChatInputCommand } from "..";
 import dateAutocomplete, { parseContestDate } from "../../../constants/autocompletes/date";
 import Emojis from "../../../constants/emojis";
@@ -46,17 +46,6 @@ export default {
       autocomplete: dateAutocomplete,
       required: true,
     },
-    {
-      type: ApplicationCommandOptionType.Channel,
-      name: "voting_channel",
-      description: "The channel to post contest entries for voting",
-      channelTypes: [
-        ChannelType.PrivateThread,
-        ChannelType.PublicThread,
-        ChannelType.GuildText,
-      ],
-      required: true,
-    },
   ],
   async execute(interaction) {
     const name = interaction.options.getString("name", true);
@@ -65,7 +54,7 @@ export default {
     const votingOpenedDate = parseContestDate(interaction.options.getString("voting_open_date", true));
     const votingClosedDate = parseContestDate(interaction.options.getString("voting_close_date", true));
     const adminChannelId = config.adminChannelId;
-    const submissionChannelId = interaction.options.getChannel("voting_channel", true).id;
+    const submissionChannelId = config.votingChannelId;
     const maxSubmissionsPerUser = 1;
     const maxVotesPerUser = 1;
 

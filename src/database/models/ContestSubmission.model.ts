@@ -19,7 +19,7 @@ export class ContestSubmissionSchema {
   @prop({ type: () => [String] }) submissionImages?: string[];
   @prop({ type: String, default: () => (Math.random() + 1).toString(16).substring(2, 8) }) submissionId!: string;
   @prop({ type: Date, default: Date.now }) submittedAt!: Date;
-  @prop({ type: String, required: true }) title!: string;
+  @prop({ type: String }) title?: string;
 }
 
 export type ContestSubmissionDocument = DocumentType<ContestSubmissionSchema>;

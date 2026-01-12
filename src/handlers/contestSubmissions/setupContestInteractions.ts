@@ -74,6 +74,13 @@ export default function setupContestInteractions({ contestId, adminChannelId }: 
       }
 
       const submissionComponents = [
+        createModalTextInput({
+          style: TextInputStyle.Short,
+          customId: "build_coordinates",
+          label: "What are the co-ordinates of your build?",
+          placeholder: "X, Y, Z",
+          required: true,
+        }),
         createFileUploadLabel({
           customId: "submission_images",
           label: "Upload up to 3 images",
@@ -82,30 +89,12 @@ export default function setupContestInteractions({ contestId, adminChannelId }: 
           minValues: 1,
           maxValues: 3,
         }),
-        createModalTextInput({
-          style: TextInputStyle.Short,
-          customId: "build_coordinates",
-          label: "What are the co-ordinates of your build?",
-          placeholder: "x, y, z",
-          required: true,
-        }),
       ];
 
       return void interaction.showModal({
         title: `Submission for ${contest.name}`,
         customId: `submit-contest-modal-${contestId}`,
-        components: [
-          createModalTextInput({
-            style: TextInputStyle.Short,
-            customId: "title",
-            label: "Submission title",
-            placeholder: "The Big Wumpus",
-            minLength: 1,
-            maxLength: 32,
-            required: true,
-          }),
-          ...submissionComponents,
-        ],
+        components: submissionComponents,
       });
     },
   });
@@ -115,7 +104,6 @@ export default function setupContestInteractions({ contestId, adminChannelId }: 
 
     const previewContent = `${Emojis.SPARKLE} Does this look good? Make sure you can see all images in the preview.`;
 
-    let title = modal.fields.getTextInputValue("title").trim();
     let submission = "";
     let submissionImages: string[] = [];
     let buildCoordinates = "";
@@ -147,7 +135,6 @@ export default function setupContestInteractions({ contestId, adminChannelId }: 
 
     const contestSubmission = new ContestSubmission({
       contestId,
-      title,
       submission,
       authorId: modal.user.id,
       messageLink: pendingMessageLink,
@@ -177,8 +164,6 @@ export default function setupContestInteractions({ contestId, adminChannelId }: 
       allowedUsers: [modal.user.id],
       callback(interaction) {
         modals.set(`${modal.id}-edit-modal`, editModal => {
-          title = editModal.fields.getTextInputValue("title").trim();
-
           const uploadedImages = editModal.fields.getUploadedFiles("submission_images");
           const uploadedUrls = uploadedImages
             ? Array.from(uploadedImages.values()).map(attachment => attachment.url).filter(Boolean)
@@ -209,8 +194,6 @@ export default function setupContestInteractions({ contestId, adminChannelId }: 
           submission = submissionImages[0] ?? "";
           contestSubmission.submissionImages = submissionImages;
           contestSubmission.buildCoordinates = buildCoordinates;
-
-          contestSubmission.title = title;
           contestSubmission.submission = submission;
 
           if (!editModal.isFromMessage()) return;
@@ -251,13 +234,11 @@ export default function setupContestInteractions({ contestId, adminChannelId }: 
           components: [
             createModalTextInput({
               style: TextInputStyle.Short,
-              customId: "title",
-              label: "Submission title",
-              placeholder: "The Big Wumpus",
-              minLength: 1,
-              maxLength: 32,
+              customId: "build_coordinates",
+              label: "What are the co-ordinates of your build?",
+              placeholder: "X, Y, Z",
               required: true,
-              value: title,
+              value: buildCoordinates,
             }),
             createFileUploadLabel({
               customId: "submission_images",
@@ -265,14 +246,6 @@ export default function setupContestInteractions({ contestId, adminChannelId }: 
               description: "Upload new images to replace the existing ones.",
               required: false,
               maxValues: 3,
-            }),
-            createModalTextInput({
-              style: TextInputStyle.Short,
-              customId: "build_coordinates",
-              label: "What are the co-ordinates of your build?",
-              placeholder: "x, y, z",
-              required: true,
-              value: buildCoordinates,
             }),
           ],
         });

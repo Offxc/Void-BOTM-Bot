@@ -43,7 +43,7 @@ export default {
     const votingOpenedDate = votingOpenedDateInput ? parseContestDate(votingOpenedDateInput) : contest.votingOpenedDate;
     const votingClosedDate = votingClosedDateInput ? parseContestDate(votingClosedDateInput) : contest.votingClosedDate;
     const adminChannelId = config.adminChannelId || contest.adminChannelId;
-    const submissionChannelId = interaction.options.getChannel("voting_channel")?.id ?? contest.submissionChannelId;
+    const submissionChannelId = config.votingChannelId || contest.submissionChannelId;
     const maxSubmissionsPerUser = 1;
     const maxVotesPerUser = 1;
 

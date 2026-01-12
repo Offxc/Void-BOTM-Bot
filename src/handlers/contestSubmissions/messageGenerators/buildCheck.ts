@@ -8,7 +8,7 @@ export default function generateBuildCheckMessage(submission: ContestSubmissionD
 
   return {
     content: [
-      `${Emojis.SPARKLE} Build check for **${submission.title}** by <@${submission.authorId}>.`,
+      `${Emojis.SPARKLE} Build check for <@${submission.authorId}>.`,
       `Coordinates: ${coordinates}`,
     ].join("\n"),
     embeds: generateSubmissionEmbeds(submission),

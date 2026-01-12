@@ -117,7 +117,7 @@ buttonComponents.set("contest-submission-vote", {
       return void interaction.reply({
         content: `${Emojis.ANGER} You have reached the maximum number of votes for this contest. You've currently voted for the following submissions:\n${votes.map(vote => {
           const submission = submissionsVoted.find(sub => sub.submissionId === vote.submissionId);
-          return submission ? `> [${submission.title}](${submission.messageLink})` : "*Unknown vote*";
+          return submission ? `> [Submission ${submission.submissionId}](${submission.messageLink})` : "*Unknown vote*";
         }).join("\n")}`,
         ephemeral: true,
       });
@@ -170,7 +170,7 @@ buttonComponents.set("contest-submission-admin", {
 
     return void interaction.reply({
       content: [
-        `${Emojis.SPARKLE} **${submission.title}** by <@${submission.authorId}>.`,
+        `${Emojis.SPARKLE} Submission by <@${submission.authorId}>.`,
         `${Emojis.STAR} Votes: **(${voteEntries.length})**\n${voteEntries.map(vote => `> <@${vote.userId}>`).join("\n")}`,
       ].join("\n\n"),
       components: [

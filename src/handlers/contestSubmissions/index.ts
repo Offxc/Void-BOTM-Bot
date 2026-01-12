@@ -55,17 +55,63 @@ export function setupJobs(contest: ContestDocument, client: Client): void {
 }
 
 function onSubmissionEnd(contest: ContestDocument, client: Client): void {
-  const channel = client.channels.resolve(contest.submissionChannelId) as null | (SendableChannels & TextBasedChannel);
-  if (!channel) return void mainLogger.warn(`Could not find channel ${contest.submissionChannelId} when trying to update voting results`);
+  const resolvedVotingChannelId = config.votingChannelId || contest.submissionChannelId;
+  const channel = resolvedVotingChannelId
+    ? client.channels.resolve(resolvedVotingChannelId) as null | (SendableChannels & TextBasedChannel)
+    : null;
+  if (resolvedVotingChannelId && !channel) {
+    mainLogger.warn(`Could not find channel ${resolvedVotingChannelId} when trying to update voting results`);
+  }
 
-  return void channel.send({
+  const resolvedAdminChannelId = contest.adminChannelId ?? config.adminChannelId;
+  const adminChannel = resolvedAdminChannelId
+    ? client.channels.resolve(resolvedAdminChannelId) as null | (SendableChannels & TextBasedChannel)
+    : null;
+  if (resolvedAdminChannelId && !adminChannel) {
+    mainLogger.warn(`Could not find channel ${resolvedAdminChannelId} when trying to post contest updates`);
+  }
+
+  const message = {
     content: `${Emojis.SPARKLE} The submission phase has ended for this contest.`,
-  });
+  };
+
+  if (channel) {
+    void channel.send(message);
+  }
+  if (adminChannel && adminChannel.id !== channel?.id) {
+    void adminChannel.send(message);
+  }
 }
 
 function onVoteStart(contest: ContestDocument, client: Client): void {
-  const channel = client.channels.resolve(contest.submissionChannelId) as null | (SendableChannels & TextBasedChannel);
-  if (!channel) return void mainLogger.warn(`Could not find channel ${contest.submissionChannelId} when trying to update voting results`);
+  const resolvedVotingChannelId = config.votingChannelId || contest.submissionChannelId;
+  const channel = resolvedVotingChannelId
+    ? client.channels.resolve(resolvedVotingChannelId) as null | (SendableChannels & TextBasedChannel)
+    : null;
+  if (resolvedVotingChannelId && !channel) {
+    mainLogger.warn(`Could not find channel ${resolvedVotingChannelId} when trying to update voting results`);
+  }
+
+  const resolvedAdminChannelId = contest.adminChannelId ?? config.adminChannelId;
+  const adminChannel = resolvedAdminChannelId
+    ? client.channels.resolve(resolvedAdminChannelId) as null | (SendableChannels & TextBasedChannel)
+    : null;
+  if (resolvedAdminChannelId && !adminChannel) {
+    mainLogger.warn(`Could not find channel ${resolvedAdminChannelId} when trying to post contest updates`);
+  }
+
+  const message = {
+    content: `${Emojis.SPARKLE} The voting phase has started for this contest, you can now go submit your votes.`,
+  };
+
+  if (channel) {
+    void channel.send(message);
+  }
+  if (adminChannel && adminChannel.id !== channel?.id) {
+    void adminChannel.send(message);
+  }
+
+  if (!channel) return;
 
   return void ContestSubmission.find({ contestId: contest.contestId }).then(async submissions => {
     const eligibleSubmissions = submissions.filter(submission => submission.status !== ContestSubmissionStatus.REJECTED);
@@ -73,13 +119,9 @@ function onVoteStart(contest: ContestDocument, client: Client): void {
       .filter(submission => !testLink(submission.messageLink))
       .sort((a, b) => a.submittedAt.getTime() - b.submittedAt.getTime());
 
-    await channel.send({
-      content: `${Emojis.SPARKLE} The voting phase has started for this contest, you can now go submit your votes.`,
-    });
-
     for (const submission of pendingSubmissions) {
-      const message = await channel.send(generateSubmittedMessage(submission));
-      submission.messageLink = message.url;
+      const messageResult = await channel.send(generateSubmittedMessage(submission));
+      submission.messageLink = messageResult.url;
       submission.status = ContestSubmissionStatus.APPROVED;
       await submission.save();
     }
@@ -87,8 +129,13 @@ function onVoteStart(contest: ContestDocument, client: Client): void {
 }
 
 function onVoteEnd(contest: ContestDocument, client: Client): void {
-  const channel = client.channels.resolve(contest.submissionChannelId) as null | (SendableChannels & TextBasedChannel);
-  if (!channel) return void mainLogger.warn(`Could not find channel ${contest.submissionChannelId} when trying to update voting results`);
+  const resolvedVotingChannelId = config.votingChannelId || contest.submissionChannelId;
+  const channel = resolvedVotingChannelId
+    ? client.channels.resolve(resolvedVotingChannelId) as null | (SendableChannels & TextBasedChannel)
+    : null;
+  if (resolvedVotingChannelId && !channel) {
+    mainLogger.warn(`Could not find channel ${resolvedVotingChannelId} when trying to update voting results`);
+  }
   const resolvedAdminChannelId = contest.adminChannelId ?? config.adminChannelId;
   const adminChannel = resolvedAdminChannelId
     ? client.channels.resolve(resolvedAdminChannelId) as null | (SendableChannels & TextBasedChannel)
@@ -100,23 +147,27 @@ function onVoteEnd(contest: ContestDocument, client: Client): void {
   return void ContestSubmission.find({ contestId: contest.contestId }).then(async submissions => {
     mainLogger.info(`Updating voting results for contest ${contest.contestId} with ${submissions.length} submissions.`);
     const start = Date.now();
-    await channel.send({
+    const votingEndedMessage = {
       content: `${Emojis.SPARKLE} Voting has ended for this contest, the results will be revealed in a moment.`,
-    });
+    };
+    if (channel) {
+      await channel.send(votingEndedMessage);
+    }
+    if (adminChannel && adminChannel.id !== channel?.id) {
+      await adminChannel.send(votingEndedMessage);
+    }
     const approvedSubmissions = submissions.filter(submission => submission.status === ContestSubmissionStatus.APPROVED);
-    await Promise.all(approvedSubmissions.map(async submission => {
-      const messageId = submission.messageLink.split("/").pop() ?? "";
-      const message = await channel.messages.fetch(messageId).catch(() => null);
-      if (!message) return void mainLogger.warn(`Could not find message ${submission.messageLink} when trying to update voting results`);
+    if (channel) {
+      await Promise.all(approvedSubmissions.map(async submission => {
+        const messageId = submission.messageLink.split("/").pop() ?? "";
+        const message = await channel.messages.fetch(messageId).catch(() => null);
+        if (!message) return void mainLogger.warn(`Could not find message ${submission.messageLink} when trying to update voting results`);
 
-      return message.edit(generateSubmittedMessage(submission, true));
-    }));
+        return message.edit(generateSubmittedMessage(submission, true));
+      }));
+    }
 
     if (adminChannel) {
-      await adminChannel.send({
-        content: `${Emojis.SPARKLE} Voting has ended for **${contest.name}**.`,
-      });
-
       const voteEntries = await ContestVoteEntry.find({ contestId: contest.contestId });
       const voteCounts = new Map<string, number>();
       for (const entry of voteEntries) {

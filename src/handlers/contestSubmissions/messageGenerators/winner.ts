@@ -6,7 +6,7 @@ import { generateSubmissionEmbeds } from ".";
 export default function generateWinnerMessage(placement: string, submission: ContestSubmissionDocument): MessageCreateOptions {
   const coordinates = submission.buildCoordinates?.trim();
   const lines = [
-    `${Emojis.TADA} ${placement} place - **${submission.title}** by <@${submission.authorId}>.`,
+    `${Emojis.TADA} ${placement} place - <@${submission.authorId}>.`,
   ];
 
   if (coordinates) {
