@@ -7,8 +7,8 @@ import subcommandPostButton from "./postButton";
 import subcommandRemove from "./remove";
 
 export default {
-  name: "contests",
-  description: "Manage contests",
+  name: "botm",
+  description: "Manage BOTM contests",
   subcommands: [
     subcommandCreate,
     subcommandEdit,

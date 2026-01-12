@@ -41,7 +41,7 @@ export default {
               type: ComponentType.Button,
               style: ButtonStyle.Primary,
               customId: `submit-contest-${contestId}`,
-              label: "Submit",
+              label: "Submit your Build of the Month",
             },
           ],
         },

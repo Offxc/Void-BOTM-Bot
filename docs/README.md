@@ -37,14 +37,14 @@ A contest is a collection system of submissions where people can submit either a
 
 ### Manage a contest
 
-You can create a contest with the command [`/contests create`](../src/commands/slash/contests/create.ts) and then edit it with the command [`/contests edit`](../src/commands/slash/contests/edit.ts) later if you need to. If you want to see a list of all contests, you can use the command [`/contests list`](../src/commands/slash/contests/list.ts), and, finally, you can remove a contest with the command [`/contests remove`](../src/commands/slash/contests/remove.ts).
+You can create a contest with the command [`/botm create`](../src/commands/slash/contests/create.ts) and then edit it with the command [`/botm edit`](../src/commands/slash/contests/edit.ts) later if you need to. If you want to see a list of all contests, you can use the command [`/botm list`](../src/commands/slash/contests/list.ts), and, finally, you can remove a contest with the command [`/botm remove`](../src/commands/slash/contests/remove.ts).
 
-When you've set up a contest, you need a submit button. The button will act as a way for participants to submit their work. Create one with the command [`/contests post_button`](../src/commands/slash/contests/post_button.ts).
+When you've set up a contest, you need a submit button. The button will act as a way for participants to submit their work. Create one with the command [`/botm post_button`](../src/commands/slash/contests/post_button.ts).
 
 ![Submit button](./images/dark/submit-button.png#gh-dark-mode-only)
 ![Submit button](./images/light/submit-button.png#gh-light-mode-only)
 
-You can also list and filter participants in a contest with the command [`/contests list_participants`](../src/commands/slash/contests/list_participants.ts).
+You can also list and filter participants in a contest with the command [`/botm list_participants`](../src/commands/slash/contests/list_participants.ts).
 
 ## Leaderboard
 
