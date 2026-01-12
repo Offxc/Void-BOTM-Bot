@@ -1,5 +1,5 @@
 import { ApplicationCommandOptionType, ButtonStyle, ComponentType } from "discord.js";
-import type { SendableChannels, TextBasedChannel } from "discord.js";
+import type { ActionRow, FetchMessagesOptions, MessageActionRowComponent, SendableChannels, TextBasedChannel } from "discord.js";
 import type { SecondLevelChatInputCommand } from "..";
 import dateAutocomplete, { parseContestDate } from "../../../constants/autocompletes/date";
 import Emojis from "../../../constants/emojis";
@@ -16,7 +16,9 @@ const messageFetchLimit = 100;
 async function clearChannelMessages(channel: SendableChannels & TextBasedChannel): Promise<void> {
   let before: string | undefined;
   while (true) {
-    const messages = await channel.messages.fetch({ limit: messageFetchLimit, before }).catch(() => null);
+    const options: FetchMessagesOptions = { limit: messageFetchLimit };
+    if (before) options.before = before;
+    const messages = await channel.messages.fetch(options).catch(() => null);
     if (!messages || messages.size === 0) break;
     for (const message of messages.values()) {
       await message.delete().catch(() => null);
@@ -138,7 +140,7 @@ export default {
     });
 
     contest.submissionButtonMessageId = buttonMessage.id;
-    contest.submissionsClosedMessageId = undefined;
+    delete contest.submissionsClosedMessageId;
     await contest.save();
 
     for (const existingContest of existingContests) {
@@ -159,11 +161,15 @@ export default {
         if (recentMessages) {
           for (const message of recentMessages.values()) {
             if (message.author?.id !== botUserId) continue;
-            const hasSubmitButton = message.components.some(row => row.components.some(component =>
-              component.type === ComponentType.Button &&
-              "customId" in component &&
-              component.customId === `submit-contest-${existingContest.contestId}`,
-            ));
+            const hasSubmitButton = message.components.some(row => {
+              if (row.type !== ComponentType.ActionRow) return false;
+              const actionRow = row as ActionRow<MessageActionRowComponent>;
+              return actionRow.components.some(component =>
+                component.type === ComponentType.Button &&
+                "customId" in component &&
+                component.customId === `submit-contest-${existingContest.contestId}`,
+              );
+            });
             const isClosedMessage = message.content.trim() === submissionsClosedMessage;
             if (hasSubmitButton || isClosedMessage) {
               await message.delete().catch(() => null);

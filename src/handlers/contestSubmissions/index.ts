@@ -106,7 +106,7 @@ function onSubmissionEnd(contest: ContestDocument, client: Client): void {
       if (existing) await existing.delete().catch(() => null);
     })).then(async () => {
       const closedMessage = await buttonChannel.send({ content: submissionsClosedMessage });
-      contest.submissionButtonMessageId = undefined;
+      delete contest.submissionButtonMessageId;
       contest.submissionsClosedMessageId = closedMessage.id;
       await contest.save();
     }).catch(() => null);
