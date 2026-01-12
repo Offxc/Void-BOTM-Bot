@@ -2,7 +2,7 @@ import type { APIEmbed } from "discord.js";
 import { Colors } from "discord.js";
 import type { ContestSubmissionDocument } from "../../../database/models/ContestSubmission.model";
 
-const maxImagesPerSubmission = 3;
+const maxImagesPerSubmission = 6;
 
 export function generateSubmissionEmbeds(submission: ContestSubmissionDocument): APIEmbed[] {
   const footer = { text: `${submission.contestId}-${submission.submissionId}` };

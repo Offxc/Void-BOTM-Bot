@@ -83,11 +83,11 @@ export default function setupContestInteractions({ contestId, adminChannelId }: 
         }),
         createFileUploadLabel({
           customId: "submission_images",
-          label: "Upload up to 3 images",
-          description: "You can select up to 3 files in one upload.",
+          label: "Upload up to 6 images",
+          description: "You can select up to 6 files in one upload.",
           required: true,
           minValues: 1,
-          maxValues: 3,
+          maxValues: 6,
         }),
       ];
 
@@ -242,10 +242,10 @@ export default function setupContestInteractions({ contestId, adminChannelId }: 
             }),
             createFileUploadLabel({
               customId: "submission_images",
-              label: "Upload up to 3 images",
+              label: "Upload up to 6 images",
               description: "Upload new images to replace the existing ones.",
               required: false,
-              maxValues: 3,
+              maxValues: 6,
             }),
           ],
         });
