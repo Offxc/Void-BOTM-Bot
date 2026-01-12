@@ -8,6 +8,8 @@ export class ContestSchema {
   @prop({ type: Number, required: true }) maxVotesPerUser!: number;
   @prop({ type: String, required: true }) name!: string;
   @prop({ type: String }) adminChannelId?: Snowflake;
+  @prop({ type: String }) submissionButtonMessageId?: Snowflake;
+  @prop({ type: String }) submissionsClosedMessageId?: Snowflake;
   @prop({ type: String, required: true }) submissionChannelId!: Snowflake;
   @prop({ type: Date, required: true }) submissionClosedDate!: Date;
   @prop({ type: Date, required: true }) submissionOpenedDate!: Date;

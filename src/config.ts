@@ -35,4 +35,5 @@ export default {
   adminRoles: (process.env["ADMIN_ROLES"] ?? "").split(","),
   adminChannelId: String(process.env["ADMIN_CHANNEL_ID"] ?? "1460043947425403181"),
   votingChannelId: String(process.env["VOTING_CHANNEL_ID"] ?? "1459946580634239090"),
+  submissionButtonChannelId: String(process.env["SUBMISSION_BUTTON_CHANNEL_ID"] ?? "1459946215306297427"),
 } as const;

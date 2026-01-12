@@ -19,6 +19,14 @@ export default function handleContestSubmissions(client: Client<true>): void {
 
 const jobMap = new Map<string, NodeJS.Timeout[]>();
 const timeoutOverflow = 2 ** 31 - 1;
+const submissionsClosedMessage = "Build of the Month submissions are now closed.";
+
+export function clearJobs(contestId: string): void {
+  const jobs = jobMap.get(contestId);
+  if (!jobs) return;
+  jobs.forEach(clearTimeout);
+  jobMap.delete(contestId);
+}
 
 export function setupJobs(contest: ContestDocument, client: Client): void {
   let jobs = jobMap.get(contest.contestId) ?? [];
@@ -80,6 +88,28 @@ function onSubmissionEnd(contest: ContestDocument, client: Client): void {
   }
   if (adminChannel && adminChannel.id !== channel?.id) {
     void adminChannel.send(message);
+  }
+
+  const buttonChannelId = config.submissionButtonChannelId;
+  const buttonChannel = buttonChannelId
+    ? client.channels.resolve(buttonChannelId) as null | (SendableChannels & TextBasedChannel)
+    : null;
+  if (buttonChannelId && !buttonChannel) {
+    mainLogger.warn(`Could not find channel ${buttonChannelId} when trying to update the submission button`);
+    return;
+  }
+
+  if (buttonChannel) {
+    const messageIds = [contest.submissionButtonMessageId, contest.submissionsClosedMessageId].filter(Boolean) as string[];
+    void Promise.all(messageIds.map(async messageId => {
+      const existing = await buttonChannel.messages.fetch(messageId).catch(() => null);
+      if (existing) await existing.delete().catch(() => null);
+    })).then(async () => {
+      const closedMessage = await buttonChannel.send({ content: submissionsClosedMessage });
+      contest.submissionButtonMessageId = undefined;
+      contest.submissionsClosedMessageId = closedMessage.id;
+      await contest.save();
+    }).catch(() => null);
   }
 }
 

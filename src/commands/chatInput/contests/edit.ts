@@ -33,7 +33,7 @@ export default {
       });
     }
 
-    const name = interaction.options.getString("name") ?? contest.name;
+    const name = "BOTM";
     const submissionOpenedDateInput = interaction.options.getString("submission_open_date");
     const submissionClosedDateInput = interaction.options.getString("submission_close_date");
     const votingOpenedDateInput = interaction.options.getString("voting_open_date");
