@@ -112,7 +112,7 @@ export default function setupContestInteractions({ contestId, adminChannelId }: 
     submissionImages = Array.from(uploadedImages.values())
       .map(attachment => attachment.url)
       .filter(Boolean)
-      .slice(0, 3);
+      .slice(0, 6);
     buildCoordinates = modal.fields.getTextInputValue("build_coordinates").trim();
 
     if (!submissionImages.length) {
@@ -148,7 +148,7 @@ export default function setupContestInteractions({ contestId, adminChannelId }: 
         if (resolvedAdminChannelId) {
           const adminChannel = modal.client.channels.resolve(resolvedAdminChannelId) as null | (SendableChannels & TextBasedChannel);
           if (adminChannel) {
-            await adminChannel.send(generateBuildCheckMessage(contestSubmission));
+            await adminChannel.send(await generateBuildCheckMessage(contestSubmission));
           }
         }
         void contestSubmission.save();
@@ -170,7 +170,7 @@ export default function setupContestInteractions({ contestId, adminChannelId }: 
             : [];
 
           if (uploadedUrls.length) {
-            submissionImages = uploadedUrls.slice(0, 3);
+            submissionImages = uploadedUrls.slice(0, 6);
           }
 
           buildCoordinates = editModal.fields.getTextInputValue("build_coordinates").trim();
