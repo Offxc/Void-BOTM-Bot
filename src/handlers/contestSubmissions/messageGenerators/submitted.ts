@@ -1,5 +1,5 @@
-import type { MessageCreateOptions, MessageEditOptions } from "discord.js";
-import { ButtonStyle, ComponentType } from "discord.js";
+import type { APIEmbed, MessageCreateOptions } from "discord.js";
+import { ButtonStyle, Colors, ComponentType } from "discord.js";
 import type { ContestSubmissionDocument } from "../../../database/models/ContestSubmission.model";
 import { generateSubmissionEmbeds } from ".";
 import config from "../../../config";
@@ -11,11 +11,31 @@ import mainLogger from "../../../utils/logger/main";
 import { buttonComponents } from "../../interactions/components";
 
 const maxVotesPerUser = 1;
+const maxImagesPerSubmission = 6;
 
-function generateSubmittedMessage(submission: ContestSubmissionDocument, votingEnd = false): Omit<MessageEditOptions, "content" | "embeds" | "flags"> & Pick<MessageCreateOptions, "content" | "embeds"> {
+function getSubmissionFiles(submission: ContestSubmissionDocument): string[] {
+  const urls = (submission.submissionImages?.length ? submission.submissionImages : [submission.submission])
+    .filter(Boolean)
+    .slice(0, maxImagesPerSubmission);
+  return urls;
+}
+
+function getSubmissionFooterEmbed(submission: ContestSubmissionDocument): APIEmbed {
+  return {
+    footer: { text: `${submission.contestId}-${submission.submissionId}` },
+    color: Colors.Blurple,
+  };
+}
+
+function generateSubmittedMessage(submission: ContestSubmissionDocument, votingEnd = false): MessageCreateOptions {
+  const files = getSubmissionFiles(submission);
+  const embeds = files.length
+    ? [getSubmissionFooterEmbed(submission)]
+    : generateSubmissionEmbeds(submission);
   return {
     content: `Submission by <@${submission.authorId}>.`,
-    embeds: generateSubmissionEmbeds(submission),
+    embeds,
+    ...(files.length ? { files } : {}),
     allowedMentions: { users: [submission.authorId] },
     components: votingEnd ?
       [] :

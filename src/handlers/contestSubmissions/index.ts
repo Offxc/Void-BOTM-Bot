@@ -63,33 +63,6 @@ export function setupJobs(contest: ContestDocument, client: Client): void {
 }
 
 function onSubmissionEnd(contest: ContestDocument, client: Client): void {
-  const resolvedVotingChannelId = config.votingChannelId || contest.submissionChannelId;
-  const channel = resolvedVotingChannelId
-    ? client.channels.resolve(resolvedVotingChannelId) as null | (SendableChannels & TextBasedChannel)
-    : null;
-  if (resolvedVotingChannelId && !channel) {
-    mainLogger.warn(`Could not find channel ${resolvedVotingChannelId} when trying to update voting results`);
-  }
-
-  const resolvedAdminChannelId = contest.adminChannelId ?? config.adminChannelId;
-  const adminChannel = resolvedAdminChannelId
-    ? client.channels.resolve(resolvedAdminChannelId) as null | (SendableChannels & TextBasedChannel)
-    : null;
-  if (resolvedAdminChannelId && !adminChannel) {
-    mainLogger.warn(`Could not find channel ${resolvedAdminChannelId} when trying to post contest updates`);
-  }
-
-  const message = {
-    content: `${Emojis.SPARKLE} The submission phase has ended for this contest.`,
-  };
-
-  if (channel) {
-    void channel.send(message);
-  }
-  if (adminChannel && adminChannel.id !== channel?.id) {
-    void adminChannel.send(message);
-  }
-
   const buttonChannelId = config.submissionButtonChannelId;
   const buttonChannel = buttonChannelId
     ? client.channels.resolve(buttonChannelId) as null | (SendableChannels & TextBasedChannel)
@@ -131,7 +104,7 @@ function onVoteStart(contest: ContestDocument, client: Client): void {
   }
 
   const message = {
-    content: `${Emojis.SPARKLE} The voting phase has started for this contest, you can now go submit your votes.`,
+    content: `${Emojis.SPARKLE} The submission phase has now ended and the voting phase has started, you may submit ONE vote.`,
   };
 
   if (channel) {
@@ -190,11 +163,11 @@ function onVoteEnd(contest: ContestDocument, client: Client): void {
     if (channel) {
       await Promise.all(approvedSubmissions.map(async submission => {
         const messageId = submission.messageLink.split("/").pop() ?? "";
-        const message = await channel.messages.fetch(messageId).catch(() => null);
-        if (!message) return void mainLogger.warn(`Could not find message ${submission.messageLink} when trying to update voting results`);
+      const message = await channel.messages.fetch(messageId).catch(() => null);
+      if (!message) return void mainLogger.warn(`Could not find message ${submission.messageLink} when trying to update voting results`);
 
-        return message.edit(generateSubmittedMessage(submission, true));
-      }));
+      return message.edit({ components: [] });
+    }));
     }
 
     if (adminChannel) {
