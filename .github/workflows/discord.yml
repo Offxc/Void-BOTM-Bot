@@ -1,0 +1,24 @@
+name: GitHub → Discord
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  release:
+    types: [published]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord notification
+        uses: rjstone/discord-webhook-notify@v2
+        with:
+          webhookUrl: ${{ secrets.DISCORD_WEBHOOK }}
+          username: "GitHub"
+          message: |
+            **${{ github.repository }}**
+            Event: `${{ github.event_name }}`
+            Actor: `${{ github.actor }}`
+            Ref: `${{ github.ref_name }}`
+            Link: ${{ github.server_url }}/${{ github.repository }}
